@@ -1,0 +1,32 @@
+{
+  "name": "ats---cv",
+  "version": "1.0.0",
+  "description": "Analizador ATS para currículums en formato PDF y DOCX",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "cli": "node src/index.js"
+  },
+  "keywords": [
+    "ATS",
+    "CV",
+    "resume",
+    "parser",
+    "analyzer"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.21.2",
+    "express-fileupload": "^1.5.1",
+    "mammoth": "^1.5.1",
+    "natural": "^6.5.0",
+    "pdf-parse": "^1.1.1",
+    "stemmer": "^1.0.5"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22"
+  }
+}

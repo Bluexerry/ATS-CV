@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analizador ATS de CV</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+
+<body>
+    <header>
+        <div class="container">
+            <h1><i class="fas fa-file-alt"></i> ATS-CV Analyzer</h1>
+            <p>Analiza la compatibilidad de tu CV con los sistemas de seguimiento de candidatos (ATS)</p>
+        </div>
+    </header>
+
+    <main class="container">
+        <section id="upload-section">
+            <div class="card">
+                <h2>Sube tu CV para análisis</h2>
+                <form id="cv-form">
+                    <div class="file-upload">
+                        <input type="file" id="cv-file" name="cv" accept=".pdf,.docx" required>
+                        <label for="cv-file">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <span id="file-name">Selecciona un archivo PDF o DOCX</span>
+                        </label>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="role-select">Puesto objetivo:</label>
+                        <select id="role-select" name="role">
+                            <option value="FULLSTACK_DEVELOPER">Desarrollador Full Stack</option>
+                            <!-- Se cargarán más opciones vía JavaScript -->
+                        </select>
+                    </div>
+
+                    <button type="submit" id="analyze-btn">
+                        <i class="fas fa-search"></i> Analizar CV
+                    </button>
+                </form>
+                <div id="loading" class="hidden">
+                    <div class="spinner"></div>
+                    <p>Analizando tu CV... Por favor espera.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="results-section" class="hidden">
+            <div class="results-header">
+                <h2>Resultados del Análisis</h2>
+                <button id="back-btn"><i class="fas fa-arrow-left"></i> Nuevo análisis</button>
+            </div>
+
+            <div class="results-container">
+                <!-- Score Overview -->
+                <div class="card score-card">
+                    <div id="score-circle">
+                        <svg viewBox="0 0 36 36" class="circular-chart">
+                            <path class="circle-bg"
+                                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                            <path id="circle-progress" class="circle" stroke-dasharray="0, 100"
+                                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                            <text x="18" y="20.35" id="score-text" class="percentage">0%</text>
+                        </svg>
+                    </div>
+                    <h3>Puntuación ATS</h3>
+                    <div class="score-breakdown">
+                        <div class="score-item">
+                            <span>Contenido</span>
+                            <div class="progress-bar">
+                                <div id="content-score" class="progress" style="width: 0%"></div>
+                            </div>
+                            <span id="content-score-text">0%</span>
+                        </div>
+                        <div class="score-item">
+                            <span>Formato</span>
+                            <div class="progress-bar">
+                                <div id="format-score" class="progress" style="width: 0%"></div>
+                            </div>
+                            <span id="format-score-text">0%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recommendations -->
+                <div class="card">
+                    <h3><i class="fas fa-lightbulb"></i> Recomendaciones clave</h3>
+                    <div class="recommendations-container">
+                        <div id="format-recommendations">
+                            <h4>Mejoras de formato</h4>
+                            <ul id="format-recommendations-list">
+                                <!-- Se llenará con JavaScript -->
+                            </ul>
+                        </div>
+                        <div id="content-recommendations">
+                            <h4>Mejoras de contenido</h4>
+                            <ul id="content-recommendations-list">
+                                <!-- Se llenará con JavaScript -->
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Skills Section -->
+                <div class="card">
+                    <h3><i class="fas fa-tools"></i> Habilidades detectadas</h3>
+                    <div id="skills-container" class="skills-container">
+                        <!-- Se llenará con JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Keywords Section -->
+                <div class="card">
+                    <h3><i class="fas fa-key"></i> Palabras clave</h3>
+                    <div id="keywords-container" class="keywords-container">
+                        <!-- Se llenará con JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Experience Section -->
+                <div class="card">
+                    <h3><i class="fas fa-briefcase"></i> Experiencia</h3>
+                    <p><strong>Años de experiencia estimados:</strong> <span id="years-experience">0</span></p>
+                    <p><strong>Roles detectados:</strong> <span id="roles-detected">Ninguno</span></p>
+                    <p><strong>Logros cuantificables:</strong> <span id="measurable-results">No</span></p>
+                </div>
+
+                <!-- Format Issues -->
+                <div class="card">
+                    <h3><i class="fas fa-exclamation-triangle"></i> Problemas de formato</h3>
+                    <ul id="format-issues-list">
+                        <!-- Se llenará con JavaScript -->
+                    </ul>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2024 ATS-CV Analyzer | Optimiza tu CV para sistemas ATS</p>
+        </div>
+    </footer>
+
+    <script src="js/main.js"></script>
+</body>
+
+</html>
