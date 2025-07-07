@@ -115,6 +115,19 @@ export function generateRecommendations(analysis, targetRole = null) {
             });
         }
 
+        // Verificación mejorada del nombre de archivo
+        const fileName = analysis.documentInfo?.fileName || '';
+
+        const professionalNamePattern = /^[A-Za-z]+(_[A-Za-z]+)*(_(CV|Resume|Curriculum|Vitae|Currículum|Résumé))(_[A-Za-z]+)*(\.(pdf|docx))$/i;
+        const spaceNamePattern = /^[A-Za-z]+([ ][A-Za-z]+)*([ ](CV|Resume|Curriculum|Vitae|Currículum|Résumé))([ ][A-Za-z]+)*(\.(pdf|docx))$/i;
+
+        // Si el nombre no sigue un patrón profesional, agregar la recomendación
+        if (!professionalNamePattern.test(fileName) && !spaceNamePattern.test(fileName)) {
+            recommendations.formatting.push(
+                'Nombra tu archivo CV de forma profesional, como "Nombre_Apellido_CV.pdf". Evita caracteres especiales, espacios y nombres genéricos como "cv.pdf" o "resume.pdf".'
+            );
+        }
+
         // Recomendaciones sobre estructura de secciones
         if (formatAnalysis.sectionAnalysis && formatAnalysis.sectionAnalysis.missingSections) {
             const missingSections = formatAnalysis.sectionAnalysis.missingSections;
@@ -170,11 +183,6 @@ export function generateRecommendations(analysis, targetRole = null) {
                 'Tu CV tiene demasiada información concentrada. Aumenta el espacio entre secciones, usa márgenes adecuados y considera eliminar detalles menos relevantes para mejorar la legibilidad.'
             );
         }
-
-        // NUEVA RECOMENDACIÓN: Sobre nombrado de archivos
-        recommendations.formatting.push(
-            'Nombra tu archivo CV de forma profesional, como "Nombre_Apellido_CV.pdf". Evita caracteres especiales, espacios y nombres genéricos como "cv.pdf" o "resume.pdf".'
-        );
 
         // NUEVA RECOMENDACIÓN: Sobre fuentes
         recommendations.formatting.push(

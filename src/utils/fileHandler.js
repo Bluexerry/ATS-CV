@@ -1,4 +1,5 @@
-import fs from 'fs';
+import fs from 'fs/promises'; // Change to Promise-based API
+import * as fsSync from 'fs'; // Import synchronous methods separately
 import path from 'path';
 import { parsePDF } from '../parsers/pdfParser.js';
 import { parseDOCX } from '../parsers/docxParser.js';
@@ -13,12 +14,12 @@ import { parseDOCX } from '../parsers/docxParser.js';
 export async function saveResultsToJSON(data, fileName, outputDir = './data/output') {
     try {
         // Asegurar que el directorio existe
-        if (!fs.existsSync(outputDir)) {
-            fs.mkdirSync(outputDir, { recursive: true });
+        if (!fsSync.existsSync(outputDir)) {
+            await fs.mkdir(outputDir, { recursive: true });
         }
 
         const filePath = path.join(outputDir, fileName);
-        fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+        await fs.writeFile(filePath, JSON.stringify(data, null, 2));
         return filePath;
     } catch (error) {
         console.error('Error al guardar resultados:', error);
@@ -32,7 +33,27 @@ export async function saveResultsToJSON(data, fileName, outputDir = './data/outp
  * @returns {boolean} True si el archivo existe
  */
 export function fileExists(filePath) {
-    return fs.existsSync(filePath);
+    return fsSync.existsSync(filePath);
+}
+
+// Añadir esta función para buscar archivos CV con nombres flexibles
+export async function findCVFiles(directory) {
+    try {
+        const files = await fs.readdir(directory);
+        // Filtrar archivos que podrían ser CVs
+        return files.filter(file => {
+            const lowerFile = file.toLowerCase();
+            return (
+                lowerFile.endsWith('.pdf') &&
+                (lowerFile.includes('cv') ||
+                    lowerFile.includes('resume') ||
+                    lowerFile.includes('curriculum'))
+            );
+        });
+    } catch (error) {
+        console.error(`Error al leer el directorio ${directory}: ${error.message}`);
+        return [];
+    }
 }
 
 /**
@@ -41,19 +62,53 @@ export function fileExists(filePath) {
  * @returns {Promise<Object>} Datos extraídos del archivo
  */
 export async function parseResumeFile(filePath) {
-    if (!fileExists(filePath)) {
-        throw new Error(`El archivo no existe: ${filePath}`);
-    }
+    try {
+        // Comprobar si existe el archivo exacto - using fs.promises
+        try {
+            await fs.access(filePath); // This will now work with fs from 'fs/promises'
+        } catch (error) {
+            // Si el archivo no existe, buscar alternativas
+            if (error.code === 'ENOENT') {
+                const directory = path.dirname(filePath);
 
-    const extension = path.extname(filePath).toLowerCase();
+                // Verificar que el directorio existe
+                try {
+                    await fs.access(directory);
+                } catch (dirError) {
+                    // Crear el directorio si no existe
+                    await fs.mkdir(directory, { recursive: true });
+                    console.log(`📁 Directorio creado: ${directory}`);
+                    throw new Error(`No se encontró ningún CV. Por favor, coloca tu CV en ${directory}`);
+                }
 
-    switch (extension) {
-        case '.pdf':
+                // Buscar archivos CV alternativos
+                const cvFiles = await findCVFiles(directory);
+                if (cvFiles.length > 0) {
+                    // Usar el primer CV encontrado
+                    const foundFilePath = path.join(directory, cvFiles[0]);
+                    console.log(`📄 CV encontrado: ${cvFiles[0]}`);
+                    filePath = foundFilePath; // Actualizar filePath con el archivo encontrado
+                } else {
+                    throw new Error(`No se encontró ningún CV en ${directory}. Asegúrate de que tu CV sea un PDF y contenga 'cv' en el nombre.`);
+                }
+            } else {
+                throw error; // Relanzar otros errores
+            }
+        }
+
+        // Ahora procesar el archivo con filePath
+        const extension = path.extname(filePath).toLowerCase();
+
+        if (extension === '.pdf') {
             return await parsePDF(filePath);
-        case '.docx':
+        } else if (extension === '.docx') {
             return await parseDOCX(filePath);
-        default:
-            throw new Error(`Formato de archivo no soportado: ${extension}`);
+        } else {
+            throw new Error(`Formato no soportado: ${extension}. Solo se aceptan archivos PDF y DOCX.`);
+        }
+    } catch (error) {
+        console.error(`Error procesando el archivo ${filePath}:`, error);
+        throw error;
     }
 }
 
@@ -61,15 +116,16 @@ export async function parseResumeFile(filePath) {
  * Lista archivos en un directorio con filtrado por extensión
  * @param {string} directory - Directorio a explorar
  * @param {string[]} extensions - Extensiones a incluir
- * @returns {string[]} Lista de archivos que coinciden con las extensiones
+ * @returns {Promise<string[]>} Lista de archivos que coinciden con las extensiones
  */
-export function listFiles(directory, extensions = ['.pdf', '.docx']) {
+export async function listFiles(directory, extensions = ['.pdf', '.docx']) {
     try {
-        if (!fs.existsSync(directory)) {
+        if (!fsSync.existsSync(directory)) {
             return [];
         }
 
-        return fs.readdirSync(directory)
+        const files = await fs.readdir(directory);
+        return files
             .filter(file => {
                 const ext = path.extname(file).toLowerCase();
                 return extensions.includes(ext);
@@ -87,8 +143,8 @@ export function listFiles(directory, extensions = ['.pdf', '.docx']) {
  */
 export function ensureDirectories(directories) {
     directories.forEach(dir => {
-        if (!fs.existsSync(dir)) {
-            fs.mkdirSync(dir, { recursive: true });
+        if (!fsSync.existsSync(dir)) {
+            fsSync.mkdirSync(dir, { recursive: true });
             console.log(`Directorio creado: ${dir}`);
         }
     });

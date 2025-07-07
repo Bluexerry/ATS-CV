@@ -2,7 +2,12 @@ import express from 'express';
 import fileUpload from 'express-fileupload';
 import { fileURLToPath } from 'url';
 import path from 'path';
+import os from 'os';
 import fs from 'fs';
+
+// Importaciones necesarias que faltan
+import { parsePDF } from './parsers/pdfParser.js';
+import mammoth from 'mammoth';
 
 // Imports de tu código existente
 import { parseResumeFile, saveResultsToJSON, ensureDirectories } from './utils/fileHandler.js';
@@ -27,19 +32,16 @@ const __dirname = path.dirname(__filename);
 // Ruta a la raíz del proyecto (un nivel arriba de src)
 const projectRoot = path.join(__dirname, '..');
 
-// Asegurar que los directorios necesarios existen
-// Usa rutas absolutas basadas en la raíz del proyecto
+// Asegurar solo el directorio de samples que sí es necesario
 ensureDirectories([
-    path.join(projectRoot, 'data/samples'),
-    path.join(projectRoot, 'data/output'),
-    path.join(projectRoot, 'data/uploads')
+    path.join(projectRoot, 'data/samples')
 ]);
 
 // Middleware para parsear JSON y manejar archivos
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(fileUpload({
-    createParentPath: true,
+    useTempFiles: false, // No crear archivos temporales
     limits: { fileSize: 10 * 1024 * 1024 } // 10MB
 }));
 
@@ -77,20 +79,35 @@ app.post('/api/analyze', async (req, res) => {
             return res.status(400).json({ error: 'Formato de archivo no soportado. Por favor, suba un archivo PDF o DOCX.' });
         }
 
-        // Guardar archivo temporalmente
-        const uploadPath = path.join(projectRoot, 'data', 'uploads', cvFile.name);
-        await cvFile.mv(uploadPath);
-
         console.log('🔍 Analizando el CV...');
         console.log('📄 Archivo:', cvFile.name);
 
-        // Realizar análisis completo del CV
-        const documentData = await parseResumeFile(uploadPath);
-        const cvText = documentData.text;
+        // Procesar el archivo directamente desde el buffer en memoria
+        let documentData;
+        if (fileExt === '.pdf') {
+            // Crea un archivo temporal para procesar
+            const tempFilePath = path.join(os.tmpdir(), `temp_${Date.now()}${fileExt}`);
+            await fs.promises.writeFile(tempFilePath, cvFile.data);
 
-        console.log('✅ Documento analizado correctamente');
-        console.log(`📊 Número de páginas: ${documentData.numpages}`);
-        console.log(`📝 Total de caracteres: ${cvText.length}`);
+            // Usa la función importada parsePDF
+            documentData = await parsePDF(tempFilePath);
+
+            // Elimina el archivo temporal cuando termines
+            fs.unlinkSync(tempFilePath);
+        } else if (fileExt === '.docx') {
+            const result = await mammoth.extractRawText({ buffer: cvFile.data });
+            documentData = {
+                text: result.value,
+                numpages: Math.ceil(result.value.length / 3000),
+                info: {
+                    format: 'docx',
+                    extracted: true,
+                    warnings: result.messages
+                }
+            };
+        }
+
+        const cvText = documentData.text;
 
         // Obtener el rol objetivo
         const targetJobRole = getRoleById(targetRole);
@@ -148,16 +165,7 @@ app.post('/api/analyze', async (req, res) => {
         // Generar recomendaciones
         const recommendations = generateRecommendations({ ...fullAnalysis, cvText }, targetRole);
 
-        // Guardar resultados
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        const fileName = `analisis-${timestamp}.json`;
-        const savedPath = await saveResultsToJSON(fullAnalysis, fileName);
-        console.log(`💾 Resultados guardados en: ${savedPath}`);
-
-        // Eliminar archivo temporal después del análisis
-        fs.unlinkSync(uploadPath);
-
-        // Enviar respuesta al cliente
+        // Enviar respuesta al cliente (mantener solo este bloque)
         res.json({
             success: true,
             analysis: {
